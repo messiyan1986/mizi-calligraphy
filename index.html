@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>米字格书法练习工具</title>
+<style>
+/* ===== 内置字体声明 ===== */
+@font-face {
+  font-family: 'BuMing';
+  src: url('fonts/BuMing.ttf') format('truetype');
+  font-weight: normal; font-style: normal;
+}
+@font-face {
+  font-family: 'SourceHanSerifBold';
+  src: url('fonts/SourceHanSerif-Bold.otf') format('opentype');
+  font-weight: bold; font-style: normal;
+}
+@font-face {
+  font-family: 'SourceHanSerifHeavy';
+  src: url('fonts/SourceHanSerif-Heavy.otf') format('opentype');
+  font-weight: bold; font-style: normal;
+}
+:root{
+  --bg:#f5f0e8;
+  --card:#fffdf7;
+  --border:#d4c5a9;
+  --accent:#8b4513;
+  --accent-l:#a0522d;
+  --accent-d:#6b3410;
+  --text:#3e2c1c;
+  --muted:#8b7355;
+  --red:#c0392b;
+  --shadow:0 2px 12px rgba(62,44,28,.1);
+  --radius:6px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"SimSun","宋体",serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+
+/* === Header === */
+.hdr{
+  background:linear-gradient(135deg,#6b3410 0%,#8b4513 40%,#a0522d 60%,#8b4513 100%);
+  color:#fffdf7;text-align:center;padding:16px 20px;
+  font-size:24px;font-weight:bold;letter-spacing:8px;
+  box-shadow:0 3px 10px rgba(0,0,0,.2);position:relative;
+  text-shadow:1px 1px 3px rgba(0,0,0,.3);
+}
+.hdr::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent 5%,#ffd700 30%,#ffd700 70%,transparent 95%);
+}
+.hdr-sub{font-size:12px;font-weight:normal;letter-spacing:3px;opacity:.75;margin-top:2px}
+
+/* === Layout === */
+.wrap{max-width:1440px;margin:0 auto;padding:16px;display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
+
+/* === Sidebar === */
+.side{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:16px;position:sticky;top:16px;
+  max-height:calc(100vh - 100px);overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent;
+}
+.side::-webkit-scrollbar{width:6px}
+.side::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* === Panel Sections === */
+.pt{
+  font-size:14px;font-weight:bold;color:var(--accent);
+  border-left:3px solid var(--accent);padding-left:10px;
+  margin-bottom:12px;letter-spacing:2px;
+}
+.sg{margin-bottom:4px}
+.dv{height:1px;background:var(--border);margin:14px 0}
+.sl{font-size:13px;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+.sl .v{color:var(--accent);font-weight:bold;min-width:32px;text-align:right}
+
+/* === Inputs === */
+input[type="number"],input[type="text"],select,textarea{
+  width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:4px;
+  font-size:13px;background:#fff;color:var(--text);transition:border-color .2s;
+}
+input:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(139,69,19,.15);
+}
+textarea{resize:vertical;min-height:80px;font-family:inherit;line-height:1.6}
+
+/* Range slider */
+input[type="range"]{
+  -webkit-appearance:none;width:100%;height:6px;border-radius:3px;
+  background:linear-gradient(90deg,var(--border),var(--accent-l));
+  outline:none;margin:4px 0 2px;cursor:pointer;
+}
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:var(--accent);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2);cursor:pointer;
+}
+input[type="range"]::-moz-range-thumb{
+  width:16px;height:16px;border-radius:50%;
+  background:var(--accent);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2);cursor:pointer;
+}
+
+/* === Toggle Switch === */
+.tr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.tr label:first-child{font-size:13px}
+.tg{position:relative;width:44px;height:24px;cursor:pointer;flex-shrink:0}
+.tg input{opacity:0;width:0;height:0}
+.tg .s{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  background:#ccc;border-radius:24px;transition:.3s;
+}
+.tg .s::before{
+  content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;
+  background:#fff;border-radius:50%;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,.2);
+}
+.tg input:checked+.s{background:var(--accent)}
+.tg input:checked+.s::before{transform:translateX(20px)}
+
+/* === Buttons === */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:9px 16px;border:none;border-radius:4px;font-size:13px;
+  cursor:pointer;transition:all .2s;font-family:inherit;letter-spacing:1px;
+}
+.bp{background:var(--accent);color:#fff;width:100%;margin-top:8px}
+.bp:hover{background:var(--accent-l);transform:translateY(-1px);box-shadow:0 2px 8px rgba(139,69,19,.3)}
+.bs{background:#e8ddd0;color:var(--text);width:100%;margin-top:6px}
+.bs:hover{background:#ddd0c0;transform:translateY(-1px)}
+.br{display:flex;gap:8px;margin-top:8px}
+.br .btn{flex:1}
+
+/* === Font Tags === */
+.fp{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.ft{
+  font-size:12px;padding:4px 12px;border:1px solid var(--border);
+  border-radius:14px;cursor:pointer;background:#f8f4ec;transition:all .2s;color:var(--text);
+}
+.ft:hover{background:#ede4d4;border-color:var(--accent-l)}
+.ft.a{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ft.c{background:#e74c3c;color:#fff;border-color:#e74c3c}
+
+/* === Color Input === */
+.clr-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.clr-row label{font-size:13px;flex:1}
+input[type="color"]{
+  width:36px;height:28px;padding:1px;border:1px solid var(--border);
+  border-radius:4px;cursor:pointer;background:#fff;
+}
+
+/* === Custom Font Items === */
+.cf{margin-top:8px}
+.fi{
+  display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:12px;
+  color:var(--muted);background:#f8f4ec;padding:6px 8px;border-radius:4px;
+}
+.fi .fn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fi .rx{cursor:pointer;color:var(--red);font-size:16px;line-height:1}
+.fh{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5}
+
+/* === Main Canvas Area === */
+.main{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:20px;min-height:500px;
+  display:flex;flex-direction:column;align-items:center;
+}
+.pager{display:flex;align-items:center;gap:12px;margin-top:14px;padding:8px 0}
+.page-info{font-size:14px;color:var(--accent);font-weight:bold;min-width:80px;text-align:center}
+.gi{font-size:13px;color:var(--muted);margin-bottom:12px;text-align:center;letter-spacing:1px}
+#cv{border:2px solid var(--red);background:#fff;border-radius:2px;max-width:100%}
+
+/* === Print === */
+@media print{
+  .hdr,.side{display:none!important}
+  .wrap{display:block;padding:0}
+  .main{border:none;box-shadow:none;padding:10px}
+  #cv{border:none;max-width:100%}
+}
+
+/* === Responsive === */
+@media(max-width:860px){
+  .wrap{grid-template-columns:1fr}
+  .side{position:static;max-height:none}
+  .hdr{font-size:20px;letter-spacing:4px}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="hdr">
+  米 字 格 书 法 练 习
+  <div class="hdr-sub">笔墨纸砚 · 静心习字</div>
+</div>
+
+<div class="wrap">
+<!-- ===== Left Sidebar ===== -->
+<div class="side">
+
+  <!-- Text Input -->
+  <div class="sg">
+    <div class="pt">文字输入</div>
+    <textarea id="inputText" placeholder="在此粘贴或输入要练习的文字..." oninput="convertText()">永和九年岁在癸丑暮春之初</textarea>
+    <div class="tr">
+      <label>转为繁体</label>
+      <label class="tg"><input type="checkbox" id="togTC" onchange="convertText()"><span class="s"></span></label>
+    </div>
+    <div id="convLabel" style="font-size:11px;color:var(--muted);margin-bottom:4px">当前：简体</div>
+    <div class="tr">
+      <label>去除标点</label>
+      <label class="tg"><input type="checkbox" id="togPunc" onchange="convertText()" checked><span class="s"></span></label>
+    </div>
+    <div class="tr">
+      <label>竖版排列</label>
+      <label class="tg"><input type="checkbox" id="togVertical" onchange="render()"><span class="s"></span></label>
+    </div>
+  </div>
+
+  <div class="dv"></div>
+
+  <!-- Grid Settings -->
+  <div class="sg">
+    <div class="pt">网格设置</div>
+    <div class="sl">格子大小 <span class="v" id="csV">80</span>px</div>
+    <input type="range" id="cs" min="40" max="200" value="80" oninput="$('csV').textContent=this.value;resetRender()">
+
+    <div class="sl" style="margin-top:10px">列数 <span class="v" id="coV">8</span></div>
+    <input type="range" id="co" min="1" max="20" value="8" oninput="$('coV').textContent=this.value;resetRender()">
+
+    <div class="sl" style="margin-top:10px">行数 <span class="v" id="roV">4</span></div>
+    <input type="range" id="ro" min="1" max="20" value="4" oninput="$('roV').textContent=this.value;resetRender()">
+
+    <div class="sl" style="margin-top:10px">间距 <span class="v" id="gpV">2</span>px</div>
+    <input type="range" id="gp" min="0" max="20" value="2" oninput="$('gpV').textContent=this.value;resetRender()">
+
+    <div class="sl" style="margin-top:10px">边框粗细 <span class="v" id="bwV">2</span>px</div>
+    <input type="range" id="bw" min="1" max="6" value="2" oninput="$('bwV').textContent=this.value;resetRender()">
+
+    <div class="sl" style="margin-top:10px">字号偏移 <span class="v" id="foV">0</span>px</div>
+    <input type="range" id="fo" min="-20" max="20" value="0" oninput="$('foV').textContent=this.value;resetRender()">
+  </div>
+
+  <div class="dv"></div>
+
+  <!-- Font Settings -->
+  <div class="sg">
+    <div class="pt">字体设置</div>
+    <div class="sl">预设字体</div>
+    <div class="fp" id="fp">
+      <span class="ft a" data-font="SimSun, 宋体, serif" onclick="selFont(this)">宋体</span>
+      <span class="ft" data-font="BuMing, serif" onclick="selFont(this)">不鸣体</span>
+      <span class="ft" data-font="SourceHanSerifBold, serif" onclick="selFont(this)">思源宋体Bold</span>
+      <span class="ft" data-font="SourceHanSerifHeavy, serif" onclick="selFont(this)">思源宋体Heavy</span>
+    </div>
+
+    <div style="margin-top:14px">
+      <div class="sl">自定义字体</div>
+      <p class="fh">可粘贴 @font-face CSS 声明，或直接加载本地字体文件（.ttf/.otf/.woff/.woff2）。</p>
+      <textarea id="ffInput" rows="3" placeholder="@font-face { font-family:'MyFont'; src:url('fonts/myfont.ttf'); }" style="margin-top:6px;font-size:11px;font-family:monospace"></textarea>
+      <div class="br">
+        <button class="btn bs" onclick="applyFF()">应用声明</button>
+        <button class="btn bs" onclick="$('ffFile').click()">加载字体文件</button>
+      </div>
+      <input type="file" id="ffFile" accept=".ttf,.otf,.woff,.woff2" multiple style="display:none" onchange="loadFF(event)">
+      <div id="cfList" class="cf"></div>
+      <p class="fh" style="margin-top:6px">为已加载的字体添加标签，以便快速切换：</p>
+      <div class="br">
+        <input type="text" id="cfName" placeholder="输入字体标签名称" style="flex:1">
+        <button class="btn bs" style="width:auto;padding:8px 14px" onclick="addFT()">添加标签</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dv"></div>
+
+  <!-- Display Settings -->
+  <div class="sg">
+    <div class="pt">显示设置</div>
+    <div class="clr-row">
+      <label>边框颜色</label>
+      <input type="color" id="bc" value="#c0392b" onchange="render()">
+    </div>
+    <div class="clr-row">
+      <label>辅助线颜色</label>
+      <input type="color" id="gc" value="#e8b4b8" onchange="render()">
+    </div>
+    <div class="tr">
+      <label>显示辅助线</label>
+      <label class="tg"><input type="checkbox" id="sg" checked onchange="render()"><span class="s"></span></label>
+    </div>
+    <div class="tr">
+      <label>显示边框</label>
+      <label class="tg"><input type="checkbox" id="sb" checked onchange="render()"><span class="s"></span></label>
+    </div>
+    <div class="clr-row">
+      <label>文字颜色</label>
+      <input type="color" id="tc" value="#1a1a1a" onchange="render()">
+    </div>
+  </div>
+
+  <div class="dv"></div>
+
+  <!-- Action Buttons -->
+  <button class="btn bp" onclick="render()">&#8635; 刷新显示</button>
+  <button class="btn bs" onclick="exportImg()">&#128196; 导出为图片</button>
+  <button class="btn bs" onclick="window.print()">&#128424; 打印</button>
+
+</div>
+
+<!-- ===== Right Main Area ===== -->
+<div class="main">
+  <div class="gi" id="gi">文字将自动排列到米字格中</div>
+  <canvas id="cv"></canvas>
+  <div class="pager" id="pager" style="display:none">
+    <button class="btn bp" id="prevPage" onclick="goPage(-1)" style="width:auto;padding:6px 16px;margin:0">&#9664; 上一页</button>
+    <span class="page-info" id="pageInfo">1 / 1</span>
+    <button class="btn bp" id="nextPage" onclick="goPage(1)" style="width:auto;padding:6px 16px;margin:0">下一页 &#9654;</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ==========================================
+//  Utility
+// ==========================================
+const $ = id => document.getElementById(id);
+
+// ==========================================
+//  State
+// ==========================================
+let curFont = 'SimSun, 宋体, serif';
+let customFontNames = []; // { name, fontFamily }
+let customFontStyles = []; // { name, styleText }
+let currentPage = 0;
+
+// ==========================================
+//  Simplified <-> Traditional Conversion
+// ==========================================
+const scArr = [..."万与丑专业丛东丝丢两严丧个丰临为丽举么义乌乐乔习乡书买乱争于亏云亘亚产亩亲亵亸亿仅仆从仑仓仪们价众优伙会伛伞伟传伡伣伤伥伦伧伪伫体余佣佥侠侣侥侦侧侨侩侪侬侭俣俦俨俩俪俫俭债倾偬偻偾偿傤傥傧储傩僞儿兑兖党兰关兴兹养兽冁内冈册写军农冯冲决况冻净凄准凉减凑凛几凤凫凭凯凶击凿刍划刘则刚创删别刬刭刹刽刾刿剀剂剐剑剥剧劝办务劢动励劲劳势勋勚匀匦匮区医华协单卖占卢卤卧卫却卺厂厅历厉压厌厍厐厕厘厢厣厦厨厩厮县叁参叆叇双发变叙叠台叶号叹叽吁后吓吕吗吨听启吴呐呒呓呕呖呗员呙呛呜咏咙咛咝咤咨咸响哑哒哓哔哕哗哙哜哝哟唛唝唠唡唢唤啓啧啬啭啮啯啰啴啸喫喷喽喾嗫嗳嘘嘤嘱噜嚣团园囱围囵国图圆圣圹场坏块坚坛坜坝坞坟坠垄垅垆垒垦垩垫垭垯垱垲垴埘埙埚堑堕塆墙壮声壳壶壸处备复够头夸夹夺奁奂奋奖奥妆妇妈妩妪妫姗姹娄娅娆娇娈娱娲娴婳婴婵婶媪媭嫒嫔嫱嫺嬀嬷孙学孪宁宝实宠审宪宫宽宾寝对寻导寿将尔尘尝尧尴尸尽层屃屉届属屡屦屿岁岂岖岗岘岚岛岩岭岳岽岿峃峄峡峣峤峥峦峯崂崃崄崭嵘嵚嵝巅巩巯币帅师帏帐帘帜带帧帮帱帻帼幂干并幺广庄庆庐庑库应庙庞废庼廪开异弃弑张弥弪弯弹强归当录彟彦彨彻征径徕忆忏忧忾怀态怂怃怄怅怆怜总怼怿恋恒恳恶恸恹恺恻恼恽悦悫悬悭悮悯惊惧惨惩惫惬惭惮惯愠愤愦愿慑慭懑懒懔戆戋戏戗战戬戯户扑执扩扪扫扬扰抚抛抟抠抡抢护报担拟拢拣拥拦拧拨择挂挚挛挜挝挞挟挠挡挢挣挤挥挦捝捞损捡换捣据掳掴掷掸掺掼揽揾揿搀搁搂搄搅携摄摅摆摇摈摊撄撑撵撷撸撺擜擞攒敌敚敛敩数斋斓斗斩断无旧时旷旸昙昵昼昽显晋晒晓晔晕晖暂暅暧术朴机杀杂权杠条来杨杩杰极构枞枢枣枥枧枨枪枫枭柜柠柽栀栅标栈栉栊栋栌栎栏树栖样栾桠桡桢档桤桥桦桧桨桩桪梦梼梾梿检棁棂棱椁椝椟椠椢椤椫椭椮楼榄榅榇榈榉榝槚槛槟槠横樯樱橥橱橹橼檐檩欢欤欧歼殁殇残殒殓殚殡殴毁毂毕毙毡毵毶氇气氢氩氲汇汉污汤汹沄沟没沣沤沥沦沧沨沩沪泄泞泪泶泷泸泺泻泼泽泾洁洒洼浃浅浆浇浈浉浊测浍济浏浐浑浒浓浔浕涂涌涚涛涝涞涟涠涡涢涣涤润涧涨涩淀渊渌渍渎渐渑渔渖渗温游湾湿溁溃溅溆溇滗滚滞滟滠满滢滤滥滦滨滩滪潆潇潋潍潙潜潨潴澛澜濑濒灏灭灯灵灾灿炀炉炖炜炝点炼炽烁烂烃烛烟烦烧烨烩烫烬热焕焖焘煴熏爱爲爷牀牍牦牵牺犊状犷犸犹狈狝狞独狭狮狯狰狱狲猃猎猕猡猪猫猬献獭玑玙玚玛玮环现玱玺珐珑珰珲琎琏琐琼瑶瑷瑸璎瓒瓮瓯电画畅畴疖疗疟疠疡疬疭疮疯疱疴痈痉痒痖痨痪痫痹瘅瘆瘗瘘瘪瘫瘾瘿癞癡癣癫皁皑皱皲盏盐监盖盗盘眍眦眬着睁睐睑睾瞆瞒瞩矫矶矾矿砀码砖砗砚砜砺砻砾础硁硕硖硗硙硚确硵碍碛碜碱礼祃祎祕祢祯祷祸禀禄禅离秃秆种积称秽秾稆税稣稳穑穞穷窃窍窎窑窜窝窥窦窭竈竖竞笃笋笔笕笺笼笾筑筚筛筜筝筹筼签筿简箓箦箧箨箩箪箫篑篓篮篯篱簖籁糴类籼粜粝粤粪粮糁糇糉糍紧絷緼縆繮纔纟纠纡红纣纤纥约级纨纩纪纫纬纭纮纯纰纱纲纳纴纵纶纷纸纹纺纻纼纽纾线绀绁绂练组绅细织终绉绊绋绌绍绎经绐绑绒结绔绕绖绗绘给绚绛络绝绞统绠绡绢绣绤绥绦继绨绩绪绫绬续绮绯绰绱绲绳维绵绶绷绸绹绺绻综绽绾绿缀缁缂缃缄缅缆缇缈缉缊缋缌缍缎缏缐缑缒缓缔缕编缗缘缙缚缛缜缝缞缟缠缡缢缣缤缥缦缧缨缩缪缫缬缭缮缯缰缱缲缳缴缵罂网罗罚罢罴羁羟羡羣翘翙翚耢耧耸耻聂聋职聍联聩聪肃肠肤肮肴肾肿胀胁胆胜胧胨胪胫胶脉脍脏脐脑脓脔脚脣脱脶脸腊腌腘腭腻腼腽腾膑膻臜舆舣舰舱舻艰艳艺节芈芗芜芦苁苇苈苋苌苍苎苏苧苹范茎茏茑茔茕茧荆荐荙荚荛荜荝荞荟荠荡荣荤荥荦荧荨荩荪荫荬荭荮药莅莱莲莳莴莶获莸莹莺莼萚萝萤营萦萧萨葱蒀蒇蒉蒋蒌蒏蓝蓟蓠蓣蓥蓦蔂蔘蔷蔹蔺蔼蔿蕰蕲蕴薮藓藴蘖虏虑虚虫虬虮虱虽虾虿蚀蚁蚂蚃蚕蚝蚬蛊蛎蛏蛮蛰蛱蛲蛳蛴蜕蜗蜡蝇蝈蝉蝎蝼蝾螀螨蟏衅衆衔补衬衮袄袅袆袜袭袯装裆裈裏裢裣裤裥褛褴襕覈见观觃规觅视觇览觉觊觋觌觍觎觏觐觑觞触觯訚詟誉誊讠计订讣认讥讦讧讨让讪讫讬训议讯记讱讲讳讴讵讶讷许讹论讻讼讽设访诀证诂诃评诅识诇诈诉诊诋诌词诎诏诐译诒诓诔试诖诗诘诙诚诛诜话诞诟诠诡询诣诤该详诧诨诩诪诫诬语诮误诰诱诲诳说诵诶请诸诹诺读诼诽课诿谀谁谂调谄谅谆谇谈谉谊谋谌谍谎谏谐谑谒谓谔谕谖谗谘谙谚谛谜谝谞谟谠谡谢谣谤谥谦谧谨谩谪谫谬谭谮谯谰谱谲谳谴谵谶豮贝贞负贠贡财责贤败账货质贩贪贫贬购贮贯贰贱贲贳贴贵贶贷贸费贺贻贼贽贾贿赀赁赂赃资赅赆赇赈赉赊赋赌赍赎赏赐赑赒赓赔赕赖赗赘赙赚赛赜赝赞赟赠赡赢赣赪赵赶趋趱趸跃跄跖跞践跶跷跸跹跻踊踌踪踬踯蹑蹒蹰蹿躏躜躯輼车轧轨轩轪轫转轭轮软轰轱轲轳轴轵轶轷轸轹轺轻轼载轾轿辀辁辂较辄辅辆辇辈辉辊辋辌辍辎辏辐辑辒输辔辕辖辗辘辙辚辞辟辩辫边辽达迁过迈运还这进远违连迟迩迳迹适选逊递逦逻遗遥邓邝邬邮邹邺邻郁郏郐郑郓郦郧郸酂酝酦酱酽酾酿醖采释里鉢鉴銮錾鍼钅钆钇针钉钊钋钌钍钎钏钐钑钒钓钔钕钖钗钘钙钚钛钜钝钞钟钠钡钢钣钤钥钦钧钨钩钪钫钬钭钮钯钰钱钲钳钴钵钶钷钸钹钺钻钼钽钾钿铀铁铂铃铄铅铆铇铈铉铊铋铌铍铎铏铐铑铒铓铔铕铖铗铘铙铚铛铜铝铞铟铠铡铢铣铤铥铦铧铨铩铪铫铬铭铮铯铰铱铲铳铴铵银铷铸铹铺铻铼铽链铿销锁锂锃锄锅锆锇锈锉锊锋锌锍锎锏锐锑锒锓锔锕锖锗锘错锚锛锜锝锞锟锠锡锢锣锤锥锦锧锨锩锪锫锬锭键锯锰锱锲锳锴锵锶锷锸锹锺锻锼锽锾锿镀镁镂镃镄镅镆镇镈镉镊镋镌镍镎镏镐镑镒镓镔镕镖镗镘镙镚镛镜镝镞镟镠镡镢镣镤镥镦镧镨镩镪镫镬镭镮镯镰镱镲镳镴镵镶长门闩闪闫闬闭问闯闰闱闲闳间闵闶闷闸闹闺闻闼闽闾闿阀阁阂阃阄阅阆阇阈阉阊阋阌阍阎阏阐阑阒阓阔阕阖阗阘阙阚阛队阳阴阵阶际陆陇陈陉陕陦陧陨险随隐隶隽难雇雏雠雳雾霁霉霡霭靓靔静靥鞑鞒鞯鞲韦韧韨韩韪韫韬韵页顶顷顸项顺须顼顽顾顿颀颁颂颃预颅领颇颈颉颊颋颌颍颎颏颐频颒颓颔颕颖颗题颙颚颛颜额颞颟颠颡颢颣颤颥颦颧风飏飐飑飒飓飔飕飖飗飘飙飚飞飨餍饣饤饥饦饧饨饩饪饫饬饭饮饯饰饱饲饳饴饵饶饷饸饹饺饻饼饽饾饿馀馁馂馃馄馅馆馇馈馉馊馋馌馍馎馏馐馑馒馓馔馕马驭驮驯驰驱驲驳驴驵驶驷驸驹驺驻驼驽驾驿骀骁骂骃骄骅骆骇骈骉骊骋验骍骎骏骐骑骒骓骔骕骖骗骘骙骚骛骜骝骞骟骠骡骢骣骤骥骦骧髅髋髌鬓鬶魇魉鮎鱼鱽鱾鱿鲀鲁鲂鲃鲄鲅鲆鲇鲈鲉鲊鲋鲌鲍鲎鲏鲐鲑鲒鲓鲔鲕鲖鲗鲘鲙鲚鲛鲜鲝鲞鲟鲠鲡鲢鲣鲤鲥鲦鲧鲨鲩鲪鲫鲬鲭鲮鲯鲰鲱鲲鲳鲴鲵鲶鲷鲸鲹鲺鲻鲼鲽鲾鲿鳀鳁鳂鳃鳄鳅鳆鳇鳈鳉鳊鳋鳌鳍鳎鳏鳐鳑鳒鳓鳔鳕鳖鳗鳘鳙鳚鳛鳜鳝鳞鳟鳠鳡鳢鳣鳤鸟鸠鸡鸢鸣鸤鸥鸦鸧鸨鸩鸪鸫鸬鸭鸮鸯鸰鸱鸲鸳鸴鸵鸶鸷鸸鸹鸺鸻鸼鸽鸾鸿鹀鹁鹂鹃鹄鹅鹆鹇鹈鹉鹊鹋鹌鹍鹎鹏鹐鹑鹒鹓鹔鹕鹖鹗鹘鹙鹚鹛鹜鹝鹞鹟鹠鹡鹢鹣鹤鹥鹦鹧鹨鹩鹪鹫鹬鹭鹮鹯鹰鹱鹲鹳鹴鹾麦麪麸麹麺麽黄黉黡黩黪黾鼋鼌鼍鼹齐齑齶齿龀龁龂龃龄龅龆龇龈龉龊龋龌龙龚龛龟鿎鿏鿒鿔"];
+const tcArr = [..."萬與醜專業叢東絲丟兩嚴喪個豐臨為麗舉麼義烏樂喬習鄉書買亂爭於虧雲亙亞產畝親褻嚲億僅僕從侖倉儀們價眾優夥會傴傘偉傳俥俔傷倀倫傖偽佇體餘傭僉俠侶僥偵側僑儈儕儂儘俁儔儼倆儷倈儉債傾傯僂僨償儎儻儐儲儺偽兒兌兗黨蘭關興茲養獸囅內岡冊寫軍農馮衝決況凍淨悽準涼減湊凜幾鳳鳧憑凱兇擊鑿芻劃劉則剛創刪別剗剄剎劊㓨劌剴劑剮劍剝劇勸辦務勱動勵勁勞勢勳勩勻匭匱區醫華協單賣佔盧滷臥衛卻巹廠廳歷厲壓厭厙龎廁釐廂厴廈廚廄廝縣叄參靉靆雙發變敘疊臺葉號嘆嘰籲後嚇呂嗎噸聽啟吳吶嘸囈嘔嚦唄員咼嗆嗚詠嚨嚀噝吒諮鹹響啞噠嘵嗶噦譁噲嚌噥喲嘜嗊嘮啢嗩喚啟嘖嗇囀齧嘓囉嘽嘯吃噴嘍嚳囁噯噓嚶囑嚕囂團園囪圍圇國圖圓聖壙場壞塊堅壇壢壩塢墳墜壟壠壚壘墾堊墊埡墶壋塏堖塒壎堝塹墮壪牆壯聲殼壺壼處備復夠頭誇夾奪奩奐奮獎奧妝婦媽嫵嫗媯姍奼婁婭嬈嬌孌娛媧嫻嫿嬰嬋嬸媼嬃嬡嬪嬙嫻媯嬤孫學孿寧寶實寵審憲宮寬賓寢對尋導壽將爾塵嘗堯尷屍盡層屓屜屆屬屢屨嶼歲豈嶇崗峴嵐島巖嶺嶽崬巋嶨嶧峽嶢嶠崢巒峰嶗崍嶮嶄嶸嶔嶁巔鞏巰幣帥師幃帳簾幟帶幀幫幬幘幗冪幹並么廣莊慶廬廡庫應廟龐廢廎廩開異棄弒張彌弳彎彈強歸當錄彠彥彲徹徵徑徠憶懺憂愾懷態慫憮慪悵愴憐總懟懌戀恆懇惡慟懨愷惻惱惲悅愨懸慳悞憫驚懼慘懲憊愜慚憚慣慍憤憒願懾憖懣懶懍戇戔戲戧戰戩戱戶撲執擴捫掃揚擾撫拋摶摳掄搶護報擔擬攏揀擁攔擰撥擇掛摯攣掗撾撻挾撓擋撟掙擠揮撏挩撈損撿換搗據擄摑擲撣摻摜攬搵撳攙擱摟揯攪攜攝攄擺搖擯攤攖撐攆擷擼攛㩵擻攢敵敓斂斆數齋斕鬥斬斷無舊時曠暘曇暱晝曨顯晉曬曉曄暈暉暫𣈶曖術樸機殺雜權槓條來楊榪傑極構樅樞棗櫪梘棖槍楓梟櫃檸檉梔柵標棧櫛櫳棟櫨櫟欄樹棲樣欒椏橈楨檔榿橋樺檜槳樁樳夢檮棶槤檢梲欞稜槨槼櫝槧槶欏樿橢槮樓欖榲櫬櫚櫸樧檟檻檳櫧橫檣櫻櫫櫥櫓櫞簷檁歡歟歐殲歿殤殘殞殮殫殯毆毀轂畢斃氈毿𣯶氌氣氫氬氳匯漢汙湯洶澐溝沒灃漚瀝淪滄渢溈滬洩濘淚澩瀧瀘濼瀉潑澤涇潔灑窪浹淺漿澆湞溮濁測澮濟瀏滻渾滸濃潯濜塗湧涗濤澇淶漣潿渦溳渙滌潤澗漲澀澱淵淥漬瀆漸澠漁瀋滲溫遊灣溼濚潰濺漵漊潷滾滯灩灄滿瀅濾濫灤濱灘澦瀠瀟瀲濰溈潛潀瀦瀂瀾瀨瀕灝滅燈靈災燦煬爐燉煒熗點煉熾爍爛烴燭煙煩燒燁燴燙燼熱煥燜燾熅燻愛為爺床牘犛牽犧犢狀獷獁猶狽獮獰獨狹獅獪猙獄猻獫獵獼玀豬貓蝟獻獺璣璵瑒瑪瑋環現瑲璽琺瓏璫琿璡璉瑣瓊瑤璦璸瓔瓚甕甌電畫暢疇癤療瘧癘瘍癧瘲瘡瘋皰痾癰痙癢瘂癆瘓癇痺癉瘮瘞瘻癟癱癮癭癩痴癬癲皂皚皺皸盞鹽監蓋盜盤瞘眥矓著睜睞瞼睪瞶瞞矚矯磯礬礦碭碼磚硨硯碸礪礱礫礎硜碩硤磽磑礄確磠礙磧磣鹼禮禡禕秘禰禎禱禍稟祿禪離禿稈種積稱穢穠穭稅穌穩穡穭窮竊竅窵窯竄窩窺竇窶灶豎競篤筍筆筧箋籠籩築篳篩簹箏籌篔籤篠簡籙簀篋籜籮簞簫簣簍籃籛籬籪籟糴類秈糶糲粵糞糧糝餱粽餈緊縶縕緪韁才糹糾紆紅紂纖紇約級紈纊紀紉緯紜紘純紕紗綱納紝縱綸紛紙紋紡紵紖紐紓線紺紲紱練組紳細織終縐絆紼絀紹繹經紿綁絨結絝繞絰絎繪給絢絳絡絕絞統綆綃絹繡綌綏絛繼綈績緒綾緓續綺緋綽鞝緄繩維綿綬繃綢綯綹綣綜綻綰綠綴緇緙緗緘緬纜緹緲緝縕繢緦綞緞緶線緱縋緩締縷編緡緣縉縛縟縝縫縗縞纏縭縊縑繽縹縵縲纓縮繆繅纈繚繕繒韁繾繰繯繳纘罌網羅罰罷羆羈羥羨群翹翽翬耮耬聳恥聶聾職聹聯聵聰肅腸膚骯餚腎腫脹脅膽勝朧腖臚脛膠脈膾髒臍腦膿臠腳唇脫腡臉臘醃膕顎膩靦膃騰臏羶臢輿艤艦艙艫艱豔藝節羋薌蕪蘆蓯葦藶莧萇蒼苧蘇薴蘋範莖蘢蔦塋煢繭荊薦薘莢蕘蓽萴蕎薈薺蕩榮葷滎犖熒蕁藎蓀蔭蕒葒葤藥蒞萊蓮蒔萵薟獲蕕瑩鶯蓴蘀蘿螢營縈蕭薩蔥蒕蕆蕢蔣蔞醟藍薊蘺蕷鎣驀虆參薔蘞藺藹蒍薀蘄蘊藪蘚蘊櫱虜慮虛蟲虯蟣蝨雖蝦蠆蝕蟻螞蠁蠶蠔蜆蠱蠣蟶蠻蟄蛺蟯螄蠐蛻蝸蠟蠅蟈蟬蠍螻蠑螿蟎蠨釁眾銜補襯袞襖嫋褘襪襲襏裝襠褌裡褳襝褲襉褸襤襴核見觀覎規覓視覘覽覺覬覡覿覥覦覯覲覷觴觸觶誾讋譽謄訁計訂訃認譏訐訌討讓訕訖託訓議訊記訒講諱謳詎訝訥許訛論訩訟諷設訪訣證詁訶評詛識詗詐訴診詆謅詞詘詔詖譯詒誆誄試詿詩詰詼誠誅詵話誕詬詮詭詢詣諍該詳詫諢詡譸誡誣語誚誤誥誘誨誑說誦誒請諸諏諾讀諑誹課諉諛誰諗調諂諒諄誶談讅誼謀諶諜謊諫諧謔謁謂諤諭諼讒諮諳諺諦謎諞諝謨讜謖謝謠謗諡謙謐謹謾謫譾謬譚譖譙讕譜譎讞譴譫讖豶貝貞負貟貢財責賢敗賬貨質販貪貧貶購貯貫貳賤賁貰貼貴貺貸貿費賀貽賊贄賈賄貲賃賂贓資賅贐賕賑賚賒賦賭齎贖賞賜贔賙賡賠賧賴賵贅賻賺賽賾贗贊贇贈贍贏贛赬趙趕趨趲躉躍蹌蹠躒踐躂蹺蹕躚躋踴躊蹤躓躑躡蹣躕躥躪躦軀轀車軋軌軒軑軔轉軛輪軟轟軲軻轤軸軹軼軤軫轢軺輕軾載輊轎輈輇輅較輒輔輛輦輩輝輥輞輬輟輜輳輻輯轀輸轡轅轄輾轆轍轔辭闢辯辮邊遼達遷過邁運還這進遠違連遲邇逕跡適選遜遞邐邏遺遙鄧鄺鄔郵鄒鄴鄰鬱郟鄶鄭鄆酈鄖鄲酇醞醱醬釅釃釀醞採釋裡缽鑑鑾鏨針釒釓釔針釘釗釙釕釷釺釧釤鈒釩釣鍆釹鍚釵鈃鈣鈈鈦鉅鈍鈔鍾鈉鋇鋼鈑鈐鑰欽鈞鎢鉤鈧鈁鈥鈄鈕鈀鈺錢鉦鉗鈷缽鈳鉕鈽鈸鉞鑽鉬鉭鉀鈿鈾鐵鉑鈴鑠鉛鉚鉋鈰鉉鉈鉍鈮鈹鐸鉶銬銠鉺鋩錏銪鋮鋏鋣鐃銍鐺銅鋁銱銦鎧鍘銖銑鋌銩銛鏵銓鎩鉿銚鉻銘錚銫鉸銥鏟銃鐋銨銀銣鑄鐒鋪鋙錸鋱鏈鏗銷鎖鋰鋥鋤鍋鋯鋨鏽銼鋝鋒鋅鋶鐦鐧銳銻鋃鋟鋦錒錆鍺鍩錯錨錛錡鍀錁錕錩錫錮鑼錘錐錦鑕鍁錈鍃錇錟錠鍵鋸錳錙鍥鍈鍇鏘鍶鍔鍤鍬鍾鍛鎪鍠鍰鎄鍍鎂鏤鎡鐨鎇鏌鎮鎛鎘鑷钂鐫鎳鎿鎦鎬鎊鎰鎵鑌鎔鏢鏜鏝鏍鏰鏞鏡鏑鏃鏇鏐鐔钁鐐鏷鑥鐓鑭鐠鑹鏹鐙鑊鐳鐶鐲鐮鐿鑔鑣鑞鑱鑲長門閂閃閆閈閉問闖閏闈閒閎間閔閌悶閘鬧閨聞闥閩閭闓閥閣閡閫鬮閱閬闍閾閹閶鬩閿閽閻閼闡闌闃闠闊闋闔闐闒闕闞闤隊陽陰陣階際陸隴陳陘陝隯隉隕險隨隱隸雋難僱雛讎靂霧霽黴霢靄靚靝靜靨韃鞽韉韝韋韌韍韓韙韞韜韻頁頂頃頇項順須頊頑顧頓頎頒頌頏預顱領頗頸頡頰頲頜潁熲頦頤頻頮頹頷頴穎顆題顒顎顓顏額顳顢顛顙顥纇顫顬顰顴風颺颭颮颯颶颸颼颻飀飄飆飈飛饗饜飠飣飢飥餳飩餼飪飫飭飯飲餞飾飽飼飿飴餌饒餉餄餎餃餏餅餑餖餓餘餒餕餜餛餡館餷饋餶餿饞饁饃餺餾饈饉饅饊饌饢馬馭馱馴馳驅馹駁驢駔駛駟駙駒騶駐駝駑駕驛駘驍罵駰驕驊駱駭駢驫驪騁驗騂駸駿騏騎騍騅騌驌驂騙騭騤騷騖驁騮騫騸驃騾驄驏驟驥驦驤髏髖髕鬢鬹魘魎鯰魚魛魢魷魨魯魴䰾魺鮁鮃鯰鱸鮋鮓鮒鮊鮑鱟鮍鮐鮭鮚鮳鮪鮞鮦鰂鮜鱠鱭鮫鮮鮺鯗鱘鯁鱺鰱鰹鯉鰣鰷鯀鯊鯇鮶鯽鯒鯖鯪鯕鯫鯡鯤鯧鯝鯢鯰鯛鯨鰺鯴鯔鱝鰈鰏鱨鯷鰮鰃鰓鱷鰍鰒鰉鰁鱂鯿鰠鰲鰭鰨鰥鰩鰟鰜鰳鰾鱈鱉鰻鰵鱅䲁鰼鱖鱔鱗鱒鱯鱤鱧鱣䲘鳥鳩雞鳶鳴鳲鷗鴉鶬鴇鴆鴣鶇鸕鴨鴞鴦鴒鴟鴝鴛鷽鴕鷥鷙鴯鴰鵂鴴鵃鴿鸞鴻鵐鵓鸝鵑鵠鵝鵒鷳鵜鵡鵲鶓鵪鵾鵯鵬鵮鶉鶊鵷鷫鶘鶡鶚鶻鶖鷀鶥鶩鷊鷂鶲鶹鶺鷁鶼鶴鷖鸚鷓鷚鷯鷦鷲鷸鷺䴉鸇鷹鸌鸏鸛鸘鹺麥麵麩麴麵麼黃黌黶黷黲黽黿鼂鼉鼴齊齏顎齒齔齕齗齟齡齙齠齜齦齬齪齲齷龍龔龕龜䃮䥑鿓鎶"];
+const scTcMap = {};
+for (let i = 0; i < scArr.length; i++) {
+  scTcMap[scArr[i]] = tcArr[i];
+}
+
+function toTC(s) {
+  return [...s].map(c => scTcMap[c] || c).join('');
+}
+
+// ==========================================
+//  convertText - 简繁转换
+// ==========================================
+function convertText() {
+  const isTC = $('togTC').checked;
+  const raw = $('inputText').value;
+  const display = isTC ? toTC(raw) : raw;
+  $('convLabel').textContent = isTC ? '当前：繁体' : '当前：简体';
+  render();
+}
+
+// ==========================================
+//  selFont - 选择字体
+// ==========================================
+function selFont(el) {
+  document.querySelectorAll('#fp .ft').forEach(t => t.classList.remove('a'));
+  el.classList.add('a');
+  curFont = el.getAttribute('data-font');
+  render();
+}
+
+// ==========================================
+//  applyFF - 应用 @font-face 声明
+// ==========================================
+function applyFF() {
+  const text = $('ffInput').value.trim();
+  if (!text) return;
+  try {
+    const style = document.createElement('style');
+    style.textContent = text;
+    document.head.appendChild(style);
+    // Extract font-family name
+    const m = text.match(/font-family\s*:\s*['"]?([^'";\s]+)/);
+    if (m) {
+      const ffName = m[1];
+      const label = ffName;
+      const idx = customFontNames.findIndex(f => f.name === label);
+      if (idx === -1) {
+        customFontNames.push({ name: label, fontFamily: ffName });
+        customFontStyles.push({ name: label, styleEl: style });
+        renderCustomFontList();
+      }
+    }
+    $('ffInput').value = '';
+    alert('@font-face 声明已应用！');
+    render();
+  } catch (e) {
+    alert('声明格式有误：' + e.message);
+  }
+}
+
+// ==========================================
+//  loadFF - 加载字体文件（FileReader -> data URL -> @font-face）
+// ==========================================
+function loadFF(event) {
+  const files = event.target.files;
+  if (!files.length) return;
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const dataUrl = e.target.result;
+      const fontName = file.name.replace(/\.[^.]+$/, '');
+      const ext = file.name.split('.').pop().toLowerCase();
+      let format = 'woff2';
+      if (ext === 'ttf') format = 'truetype';
+      else if (ext === 'otf') format = 'opentype';
+      else if (ext === 'woff') format = 'woff';
+      else if (ext === 'woff2') format = 'woff2';
+
+      const ffDecl = `@font-face { font-family: '${fontName}'; src: url('${dataUrl}') format('${format}'); font-weight: normal; font-style: normal; }`;
+      const style = document.createElement('style');
+      style.textContent = ffDecl;
+      document.head.appendChild(style);
+
+      customFontNames.push({ name: fontName, fontFamily: fontName });
+      customFontStyles.push({ name: fontName, styleEl: style });
+      renderCustomFontList();
+
+      // Wait for font to load then re-render
+      document.fonts.ready.then(() => render());
+    };
+    reader.readAsDataURL(file);
+  });
+  event.target.value = '';
+}
+
+// ==========================================
+//  addFT - 添加自定义字体标签
+// ==========================================
+function addFT() {
+  const name = $('cfName').value.trim();
+  if (!name) return;
+  // Check if there's a loaded custom font to link
+  const customFont = customFontNames.find(f => f.name === name);
+  const fontFamily = customFont ? customFont.fontFamily : name;
+
+  const container = $('fp');
+  const tag = document.createElement('span');
+  tag.className = 'ft c';
+  tag.setAttribute('data-font', fontFamily + ', sans-serif');
+  tag.textContent = name;
+  tag.onclick = function() { selFont(this); };
+  container.appendChild(tag);
+  $('cfName').value = '';
+}
+
+// ==========================================
+//  renderCustomFontList - 刷新自定义字体列表
+// ==========================================
+function renderCustomFontList() {
+  const container = $('cfList');
+  container.innerHTML = '';
+  customFontNames.forEach((f, i) => {
+    const div = document.createElement('div');
+    div.className = 'fi';
+    div.innerHTML = `<span class="fn" title="${f.fontFamily}">${f.name}</span><span class="rx" onclick="removeCF(${i})" title="移除">&times;</span>`;
+    container.appendChild(div);
+  });
+}
+
+function removeCF(idx) {
+  if (idx >= 0 && idx < customFontStyles.length) {
+    const s = customFontStyles[idx];
+    if (s.styleEl && s.styleEl.parentNode) s.styleEl.parentNode.removeChild(s.styleEl);
+    customFontNames.splice(idx, 1);
+    customFontStyles.splice(idx, 1);
+    renderCustomFontList();
+    render();
+  }
+}
+
+// ==========================================
+//  goPage - 翻页
+// ==========================================
+function goPage(delta) {
+  currentPage += delta;
+  render();
+}
+
+// ==========================================
+//  exportImg - 导出Canvas为PNG
+// ==========================================
+function exportImg() {
+  const canvas = $('cv');
+  const link = document.createElement('a');
+  link.download = '米字格书法_' + Date.now() + '.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+// ==========================================
+//  resetRender - 重置页码并重新绘制
+// ==========================================
+function resetRender() { currentPage = 0; render(); }
+
+// ==========================================
+//  render - 核心绘制函数
+// ==========================================
+function render() {
+  const canvas = $('cv');
+  const ctx = canvas.getContext('2d');
+
+  // Read settings
+  const cellSize = parseInt($('cs').value) || 80;
+  const cols = parseInt($('co').value) || 8;
+  const rows = parseInt($('ro').value) || 4;
+  const gap = parseInt($('gp').value) || 2;
+  const borderWidth = parseInt($('bw').value) || 2;
+  const fontOffset = parseInt($('fo').value) || 0;
+  const borderColor = $('bc').value;
+  const guideColor = $('gc').value;
+  const textColor = $('tc').value;
+  const showGuide = $('sg').checked;
+  const showBorder = $('sb').checked;
+
+  // Text
+  let text = $('inputText').value;
+  if ($('togTC').checked) text = toTC(text);
+  // Remove whitespace/newlines
+  text = text.replace(/[\s\r\n]/g, '');
+  // Remove punctuation if enabled
+  if ($('togPunc').checked) {
+    text = text.replace(/[，。！？、；：""''（）《》【】…—·\-\s\.\,\!\?\;\:\"\'\(\)\[\]\{\}\<\>\/\\@#\$%\^&\*\+=~`\|，。！？、；：""''（）《》【】…—·\u3000]/g, '');
+  }
+  const chars = [...text];
+  const isVertical = $('togVertical').checked;
+
+  // Paging
+  const perPage = cols * rows;
+  const totalPages = Math.max(1, Math.ceil(chars.length / perPage));
+  if (currentPage >= totalPages) currentPage = totalPages - 1;
+  if (currentPage < 0) currentPage = 0;
+  const pageOffset = currentPage * perPage;
+  const pageChars = chars.slice(pageOffset, pageOffset + perPage);
+
+  // Canvas sizing
+  const totalW = cols * cellSize + (cols - 1) * gap;
+  const totalH = rows * cellSize + (rows - 1) * gap;
+  const padding = 10;
+  canvas.width = totalW + padding * 2;
+  canvas.height = totalH + padding * 2;
+
+  // Clear
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Font
+  const fontSize = Math.max(10, cellSize + fontOffset);
+  ctx.font = `${fontSize}px ${curFont}`;
+  ctx.fillStyle = textColor;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Info
+  const layoutMode = isVertical ? '竖版' : '横版';
+  $('gi').textContent = `${layoutMode} · 共 ${chars.length} 个字 · 第 ${currentPage + 1}/${totalPages} 页 · ${cols}列 × ${rows}行 · ${cellSize}px`;
+
+  // Pager visibility & buttons
+  const pager = $('pager');
+  if (totalPages <= 1) { pager.style.display = 'none'; }
+  else { pager.style.display = 'flex'; }
+  $('prevPage').disabled = currentPage <= 0;
+  $('nextPage').disabled = currentPage >= totalPages - 1;
+  $('prevPage').style.opacity = currentPage <= 0 ? '0.4' : '1';
+  $('nextPage').style.opacity = currentPage >= totalPages - 1 ? '0.4' : '1';
+  $('pageInfo').textContent = `${currentPage + 1} / ${totalPages}`;
+
+  // Draw each cell
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      // Character index: horizontal = row-major; vertical = column-major (right to left)
+      const idx = isVertical ? ((cols - 1 - c) * rows + r) : (r * cols + c);
+      const x = padding + c * (cellSize + gap);
+      const y = padding + r * (cellSize + gap);
+      const cx = x + cellSize / 2;
+      const cy = y + cellSize / 2;
+
+      // Draw guide lines (米字: cross + diagonals)
+      if (showGuide) {
+        ctx.strokeStyle = guideColor;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 3]);
+
+        // Vertical center
+        ctx.beginPath();
+        ctx.moveTo(cx, y);
+        ctx.lineTo(cx, y + cellSize);
+        ctx.stroke();
+
+        // Horizontal center
+        ctx.beginPath();
+        ctx.moveTo(x, cy);
+        ctx.lineTo(x + cellSize, cy);
+        ctx.stroke();
+
+        // Diagonal: top-left to bottom-right
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + cellSize, y + cellSize);
+        ctx.stroke();
+
+        // Diagonal: top-right to bottom-left
+        ctx.beginPath();
+        ctx.moveTo(x + cellSize, y);
+        ctx.lineTo(x, y + cellSize);
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+      }
+
+      // Draw border
+      if (showBorder) {
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = borderWidth;
+        ctx.strokeRect(x, y, cellSize, cellSize);
+      }
+
+      // Draw character
+      if (idx < pageChars.length) {
+        ctx.fillStyle = textColor;
+        ctx.font = `${fontSize}px ${curFont}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(pageChars[idx], cx, cy + fontOffset * 0.15);
+      }
+    }
+  }
+}
+
+// ==========================================
+//  Init: render on page load
+// ==========================================
+window.addEventListener('load', () => {
+  render();
+});
+
+// Re-render when text input changes (debounced)
+let renderTimer = null;
+$('inputText').addEventListener('input', () => {
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(() => render(), 100);
+});
+</script>
+</body>
+</html>
